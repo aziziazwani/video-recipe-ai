@@ -18,6 +18,7 @@ export default function AddRecipe() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [extracting, setExtracting] = useState(false);
+  const [sendingWebhook, setSendingWebhook] = useState(false);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -132,6 +133,49 @@ export default function AddRecipe() {
       });
       setExtracting(false);
     }, 3000);
+  };
+
+  const sendRecipeLink = async () => {
+    if (!formData.videoUrl) {
+      toast({
+        title: "Error",
+        description: "Please enter a video URL first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSendingWebhook(true);
+    
+    try {
+      console.log('Sending recipe link to webhook:', formData.videoUrl);
+      
+      const { data, error } = await supabase.functions.invoke('send-recipe-link', {
+        body: { recipeUrl: formData.videoUrl }
+      });
+
+      if (error) {
+        console.error('Webhook error:', error);
+        throw error;
+      }
+
+      console.log('Webhook response:', data);
+      
+      toast({
+        title: "Success!",
+        description: "Recipe link sent successfully to your n8n workflow",
+      });
+      
+    } catch (error) {
+      console.error('Error sending recipe link:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send recipe link to webhook",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingWebhook(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -250,6 +294,21 @@ export default function AddRecipe() {
                     </>
                   ) : (
                     'Extract Recipe'
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={sendRecipeLink}
+                  disabled={!formData.videoUrl || sendingWebhook}
+                  variant="secondary"
+                >
+                  {sendingWebhook ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    'Submit Recipe'
                   )}
                 </Button>
               </div>

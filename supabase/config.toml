@@ -1,1 +1,4 @@
 project_id = "izphmqfykvtyigsqomvr"
+
+[functions.send-recipe-link]
+verify_jwt = false
