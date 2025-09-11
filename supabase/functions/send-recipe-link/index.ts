@@ -45,10 +45,11 @@ serve(async (req) => {
       throw new Error(`Webhook request failed with status: ${response.status}`);
     }
 
-    console.log('Successfully sent recipe URL to n8n webhook');
+    const responseData = await response.text();
+    console.log('N8N webhook response data:', responseData);
 
     return new Response(
-      JSON.stringify({ success: true, message: 'Recipe link sent successfully' }),
+      JSON.stringify({ success: true, message: 'Recipe link sent successfully', response: responseData }),
       { 
         status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

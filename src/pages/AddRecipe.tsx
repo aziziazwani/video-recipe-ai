@@ -19,6 +19,7 @@ export default function AddRecipe() {
   const [loading, setLoading] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [sendingWebhook, setSendingWebhook] = useState(false);
+  const [webhookResponse, setWebhookResponse] = useState<string>('');
   
   const [formData, setFormData] = useState({
     title: '',
@@ -146,6 +147,7 @@ export default function AddRecipe() {
     }
 
     setSendingWebhook(true);
+    setWebhookResponse(''); // Clear previous response
     
     try {
       console.log('Sending recipe link to webhook:', formData.videoUrl);
@@ -160,6 +162,13 @@ export default function AddRecipe() {
       }
 
       console.log('Webhook response:', data);
+      
+      // Store the webhook response for display
+      if (data && data.response) {
+        setWebhookResponse(data.response);
+      } else {
+        setWebhookResponse(JSON.stringify(data, null, 2));
+      }
       
       toast({
         title: "Success!",
@@ -316,6 +325,18 @@ export default function AddRecipe() {
                 Our AI will analyze the video and extract the recipe automatically
               </p>
             </div>
+
+            {/* Webhook Response Display */}
+            {webhookResponse && (
+              <div className="space-y-2">
+                <Label>Here's the recipes</Label>
+                <Card className="p-4 bg-muted/50">
+                  <pre className="text-sm whitespace-pre-wrap break-words overflow-auto max-h-96">
+                    {webhookResponse}
+                  </pre>
+                </Card>
+              </div>
+            )}
 
             {/* Basic Information */}
             <div className="space-y-4">
