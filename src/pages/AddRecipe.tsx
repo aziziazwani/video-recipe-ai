@@ -134,17 +134,22 @@ export default function AddRecipe() {
       // Try to parse the response if it's a string
       const parsedResponse = typeof response === 'string' ? JSON.parse(response) : response;
       
-      // Extract recipe data from the response
-      const { title, category, country, ingredients, steps } = parsedResponse;
+      // Extract recipe data from the response (handle capitalized keys)
+      const { Title, Ingredients, Steps, title, category, country, ingredients, steps } = parsedResponse;
       
-      if (title || ingredients || steps) {
+      // Use capitalized keys first, fallback to lowercase
+      const recipeTitle = Title || title;
+      const recipeIngredients = Ingredients || ingredients;
+      const recipeSteps = Steps || steps;
+      
+      if (recipeTitle || recipeIngredients || recipeSteps) {
         setFormData(prev => ({
           ...prev,
-          title: title || prev.title,
+          title: recipeTitle || prev.title,
           category: category || prev.category,
           country: country || prev.country,
-          ingredients: Array.isArray(ingredients) && ingredients.length > 0 ? ingredients : prev.ingredients,
-          steps: Array.isArray(steps) && steps.length > 0 ? steps : prev.steps,
+          ingredients: Array.isArray(recipeIngredients) && recipeIngredients.length > 0 ? recipeIngredients : prev.ingredients,
+          steps: Array.isArray(recipeSteps) && recipeSteps.length > 0 ? recipeSteps : prev.steps,
         }));
         
         setIsAutoFilled(true);
