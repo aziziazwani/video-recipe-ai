@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,9 +17,8 @@ export default function AddRecipe() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [extracting, setExtracting] = useState(false);
-  const [sendingWebhook, setSendingWebhook] = useState(false);
-  const [webhookResponse, setWebhookResponse] = useState<string>('');
+  const [processingVideo, setProcessingVideo] = useState(false);
+  const [isAutoFilled, setIsAutoFilled] = useState(false);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -75,85 +74,35 @@ export default function AddRecipe() {
     }));
   };
 
-  const extractFromVideo = async () => {
-    if (!formData.videoUrl) {
-      toast({
-        title: "Error",
-        description: "Please enter a video URL first",
-        variant: "destructive",
-      });
-      return;
-    }
+  // Auto-send video URL to webhook with debounce
+  useEffect(() => {
+    if (!formData.videoUrl) return;
 
-    // Check if URL is from supported platforms
-    const isValidUrl = formData.videoUrl.includes('tiktok.com') || 
-                      formData.videoUrl.includes('youtube.com') || 
-                      formData.videoUrl.includes('youtu.be') || 
-                      formData.videoUrl.includes('instagram.com');
+    const timeoutId = setTimeout(() => {
+      processVideoUrl(formData.videoUrl);
+    }, 1000); // 1 second debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.videoUrl]);
+
+  const processVideoUrl = async (videoUrl: string) => {
+    // Check if URL is valid
+    const isValidUrl = videoUrl.includes('tiktok.com') || 
+                      videoUrl.includes('youtube.com') || 
+                      videoUrl.includes('youtu.be') || 
+                      videoUrl.includes('instagram.com');
 
     if (!isValidUrl) {
-      toast({
-        title: "Unsupported URL",
-        description: "Please use TikTok, YouTube, or Instagram video URLs",
-        variant: "destructive",
-      });
-      return;
+      return; // Silently ignore invalid URLs
     }
 
-    setExtracting(true);
-    
-    // Simulate AI extraction process for now
-    // In a real implementation, this would call an AI service
-    setTimeout(() => {
-      setFormData(prev => ({
-        ...prev,
-        title: "AI-Extracted Recipe from Video",
-        category: "simple",
-        country: "Korean",
-        ingredients: [
-          "2 eggs",
-          "1 cup rice",
-          "2 tbsp soy sauce",
-          "1 onion, diced",
-          "2 cloves garlic, minced"
-        ],
-        steps: [
-          "Heat oil in a pan over medium heat",
-          "Add diced onion and cook until translucent",
-          "Add minced garlic and cook for 1 minute",
-          "Add rice and stir to combine",
-          "Push rice to one side, scramble eggs on the other side",
-          "Mix everything together and add soy sauce",
-          "Cook for 2-3 minutes and serve hot"
-        ]
-      }));
-      
-      toast({
-        title: "Recipe Extracted!",
-        description: "AI has successfully extracted the recipe from the video. Please review and edit as needed.",
-      });
-      setExtracting(false);
-    }, 3000);
-  };
-
-  const sendRecipeLink = async () => {
-    if (!formData.videoUrl) {
-      toast({
-        title: "Error",
-        description: "Please enter a video URL first",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setSendingWebhook(true);
-    setWebhookResponse(''); // Clear previous response
+    setProcessingVideo(true);
     
     try {
-      console.log('Sending recipe link to webhook:', formData.videoUrl);
+      console.log('Processing video URL:', videoUrl);
       
       const { data, error } = await supabase.functions.invoke('send-recipe-link', {
-        body: { recipeUrl: formData.videoUrl }
+        body: { recipeUrl: videoUrl }
       });
 
       if (error) {
@@ -163,27 +112,55 @@ export default function AddRecipe() {
 
       console.log('Webhook response:', data);
       
-      // Store the webhook response for display
+      // Parse and auto-fill form data from webhook response
       if (data && data.response) {
-        setWebhookResponse(data.response);
-      } else {
-        setWebhookResponse(JSON.stringify(data, null, 2));
+        parseWebhookResponse(data.response);
       }
       
-      toast({
-        title: "Success!",
-        description: "Recipe link sent successfully to your n8n workflow",
-      });
-      
     } catch (error) {
-      console.error('Error sending recipe link:', error);
+      console.error('Error processing video URL:', error);
       toast({
-        title: "Error",
-        description: "Failed to send recipe link to webhook",
+        title: "Processing Error",
+        description: "Failed to extract recipe from video URL",
         variant: "destructive",
       });
     } finally {
-      setSendingWebhook(false);
+      setProcessingVideo(false);
+    }
+  };
+
+  const parseWebhookResponse = (response: any) => {
+    try {
+      // Try to parse the response if it's a string
+      const parsedResponse = typeof response === 'string' ? JSON.parse(response) : response;
+      
+      // Extract recipe data from the response
+      const { title, category, country, ingredients, steps } = parsedResponse;
+      
+      if (title || ingredients || steps) {
+        setFormData(prev => ({
+          ...prev,
+          title: title || prev.title,
+          category: category || prev.category,
+          country: country || prev.country,
+          ingredients: Array.isArray(ingredients) && ingredients.length > 0 ? ingredients : prev.ingredients,
+          steps: Array.isArray(steps) && steps.length > 0 ? steps : prev.steps,
+        }));
+        
+        setIsAutoFilled(true);
+        
+        toast({
+          title: "Recipe Extracted!",
+          description: "Recipe data has been automatically filled from the video",
+        });
+      }
+    } catch (parseError) {
+      console.error('Error parsing webhook response:', parseError);
+      // If parsing fails, just show the raw response
+      toast({
+        title: "Recipe Processing",
+        description: "Video processed, please check the response below",
+      });
     }
   };
 
@@ -232,7 +209,7 @@ export default function AddRecipe() {
           category: formData.category,
           country: formData.country,
           video_url: formData.videoUrl || null,
-          created_by: user.id
+          user_id: user.id
         });
 
       if (error) throw error;
@@ -278,65 +255,26 @@ export default function AddRecipe() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Video URL Input */}
             <div className="space-y-2">
-              <Label htmlFor="videoUrl">Video URL (Optional)</Label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Link className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="videoUrl"
-                    placeholder="Paste TikTok, YouTube, or Instagram video URL"
-                    value={formData.videoUrl}
-                    onChange={(e) => setFormData(prev => ({ ...prev, videoUrl: e.target.value }))}
-                    className="pl-10"
-                  />
-                </div>
-                <Button
-                  type="button"
-                  onClick={extractFromVideo}
-                  disabled={!formData.videoUrl || extracting}
-                  variant="outline"
-                >
-                  {extracting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Extracting...
-                    </>
-                  ) : (
-                    'Extract Recipe'
-                  )}
-                </Button>
-                <Button
-                  type="button"
-                  onClick={sendRecipeLink}
-                  disabled={!formData.videoUrl || sendingWebhook}
-                  variant="secondary"
-                >
-                  {sendingWebhook ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    'Submit Recipe'
-                  )}
-                </Button>
+              <Label htmlFor="videoUrl">Video URL</Label>
+              <div className="relative">
+                <Link className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="videoUrl"
+                  placeholder="Paste TikTok, YouTube, or Instagram video URL - recipe will auto-extract"
+                  value={formData.videoUrl}
+                  onChange={(e) => setFormData(prev => ({ ...prev, videoUrl: e.target.value }))}
+                  className="pl-10"
+                />
+                {processingVideo && (
+                  <div className="absolute right-3 top-3">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                )}
               </div>
               <p className="text-sm text-muted-foreground">
-                Our AI will analyze the video and extract the recipe automatically
+                Paste a video URL and the recipe will be automatically extracted
               </p>
             </div>
-
-            {/* Webhook Response Display */}
-            {webhookResponse && (
-              <div className="space-y-2">
-                <Label>Here's the recipes</Label>
-                <Card className="p-4 bg-muted/50">
-                  <pre className="text-sm whitespace-pre-wrap break-words overflow-auto max-h-96">
-                    {webhookResponse}
-                  </pre>
-                </Card>
-              </div>
-            )}
 
             {/* Basic Information */}
             <div className="space-y-4">
@@ -390,10 +328,12 @@ export default function AddRecipe() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Ingredients *</Label>
-                <Button type="button" onClick={addIngredient} size="sm" variant="outline">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Ingredient
-                </Button>
+                {!isAutoFilled && (
+                  <Button type="button" onClick={addIngredient} size="sm" variant="outline">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Ingredient
+                  </Button>
+                )}
               </div>
               <div className="space-y-2">
                 {formData.ingredients.map((ingredient, index) => (
@@ -422,10 +362,12 @@ export default function AddRecipe() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Steps *</Label>
-                <Button type="button" onClick={addStep} size="sm" variant="outline">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Step
-                </Button>
+                {!isAutoFilled && (
+                  <Button type="button" onClick={addStep} size="sm" variant="outline">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Step
+                  </Button>
+                )}
               </div>
               <div className="space-y-2">
                 {formData.steps.map((step, index) => (
