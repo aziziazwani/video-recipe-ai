@@ -131,11 +131,16 @@ export default function AddRecipe() {
 
   const parseWebhookResponse = (response: any) => {
     try {
-      // Try to parse the response if it's a string
-      const parsedResponse = typeof response === 'string' ? JSON.parse(response) : response;
+      // Handle nested structure where recipe data is in 'output' field
+      let recipeData = response;
+      if (response.output) {
+        recipeData = typeof response.output === 'string' ? JSON.parse(response.output) : response.output;
+      } else {
+        recipeData = typeof response === 'string' ? JSON.parse(response) : response;
+      }
       
       // Extract recipe data from the response (handle capitalized keys)
-      const { Title, Ingredients, Steps, title, category, country, ingredients, steps } = parsedResponse;
+      const { Title, Ingredients, Steps, title, category, country, ingredients, steps } = recipeData;
       
       // Use capitalized keys first, fallback to lowercase
       const recipeTitle = Title || title;
