@@ -309,7 +309,7 @@ export default function Profile() {
               <div className="space-y-4">
                 {favoriteRecipes.length > 0 ? (
                   favoriteRecipes.map((recipe) => (
-                    <Card key={recipe.id}>
+                    <Card key={recipe.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/recipe/${recipe.id}`)}>
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start mb-2">
                           <h3 className="font-semibold text-lg">{recipe.title}</h3>
@@ -319,7 +319,10 @@ export default function Profile() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => removeFavorite(recipe.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeFavorite(recipe.id);
+                              }}
                               className="text-red-500 hover:text-red-700"
                             >
                               <X className="h-4 w-4" />
@@ -360,7 +363,7 @@ export default function Profile() {
               <div className="space-y-4">
                 {myRecipes.length > 0 ? (
                   myRecipes.map((recipe) => (
-                    <Card key={recipe.id}>
+                    <Card key={recipe.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/recipe/${recipe.id}`)}>
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start mb-2">
                           <h3 className="font-semibold text-lg">{recipe.title}</h3>

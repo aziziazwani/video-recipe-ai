@@ -11,6 +11,7 @@ import RecipeLibrary from "./pages/RecipeLibrary";
 import AddRecipe from "./pages/AddRecipe";
 import Chatboard from "./pages/Chatboard";
 import Profile from "./pages/Profile";
+import RecipeDetails from "./pages/RecipeDetails";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/recipes" element={<RecipeLibrary />} />
+              <Route path="/recipe/:id" element={<RecipeDetails />} />
               <Route path="/add-recipe" element={<AddRecipe />} />
               <Route path="/chatboard" element={<Chatboard />} />
               <Route path="/profile" element={<Profile />} />

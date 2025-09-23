@@ -8,6 +8,7 @@ import { Heart, Search, Filter, Clock, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 interface Recipe {
   id: string;
@@ -24,6 +25,7 @@ interface Recipe {
 export default function RecipeLibrary() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [filteredRecipes, setFilteredRecipes] = useState<Recipe[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -224,7 +226,7 @@ export default function RecipeLibrary() {
       {/* Recipe Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredRecipes.map((recipe) => (
-          <Card key={recipe.id} className="hover:shadow-lg transition-shadow">
+          <Card key={recipe.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate(`/recipe/${recipe.id}`)}>
             <CardHeader className="p-0">
               <div className="h-48 bg-muted rounded-t-lg flex items-center justify-center">
                 {recipe.image_url ? (
@@ -246,7 +248,10 @@ export default function RecipeLibrary() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => toggleFavorite(recipe.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFavorite(recipe.id);
+                  }}
                   className="p-1 h-auto"
                 >
                   <Heart 
