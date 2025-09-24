@@ -41,7 +41,7 @@ serve(async (req) => {
     console.log('Sending payload to n8n webhook:', JSON.stringify(payload, null, 2));
 
     // Send POST request to n8n webhook
-    const webhookUrl = 'https://aziwaniiii.app.n8n.cloud/webhook-test/0cef5769-875c-4abd-933f-0d2d984bc3d6';
+    const webhookUrl = 'https://roxann-microelectrophoretic-cira.ngrok-free.dev/webhook-test/0cef5769-875c-4abd-933f-0d2d984bc3d6';
     
     const response = await fetch(webhookUrl, {
       method: 'POST',
