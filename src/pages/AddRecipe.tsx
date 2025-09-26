@@ -273,12 +273,32 @@ export default function AddRecipe() {
                   placeholder="Paste TikTok, YouTube, or Instagram video URL - recipe will auto-extract"
                   value={formData.videoUrl}
                   onChange={(e) => setFormData(prev => ({ ...prev, videoUrl: e.target.value }))}
-                  className="pl-10"
+                  className="pl-10 pr-10"
                 />
                 {processingVideo && (
                   <div className="absolute right-3 top-3">
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   </div>
+                )}
+                {formData.videoUrl && !processingVideo && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="absolute right-1 top-1 h-8 w-8 p-0 hover:bg-muted"
+                    onClick={() => {
+                      setFormData(prev => ({
+                        ...prev,
+                        videoUrl: '',
+                        title: '',
+                        ingredients: [''],
+                        steps: ['']
+                      }));
+                      setIsAutoFilled(false);
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 )}
               </div>
               <p className="text-sm text-muted-foreground">
