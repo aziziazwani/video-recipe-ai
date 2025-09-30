@@ -219,6 +219,7 @@ export default function AddRecipe() {
           category: formData.category,
           country: formData.country,
           video_url: formData.videoUrl || null,
+          link: formData.videoUrl || null,
           user_id: user.id
         });
 

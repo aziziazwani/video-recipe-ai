@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Clock, Users, Heart } from 'lucide-react';
+import { ArrowLeft, Clock, Users, Heart, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -17,6 +17,7 @@ interface Recipe {
   category: string;
   country: string;
   image_url?: string;
+  link?: string;
   created_at: string;
   user_id: string;
   is_favorited?: boolean;
@@ -241,6 +242,18 @@ export default function RecipeDetails() {
                 </li>
               ))}
             </ol>
+            {recipe.link && (
+              <div className="mt-4 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => window.open(recipe.link, '_blank', 'noopener,noreferrer')}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  View Original Recipe
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
