@@ -85,6 +85,19 @@ export default function AddRecipe() {
     return () => clearTimeout(timeoutId);
   }, [formData.videoUrl]);
 
+  const normalizeYouTubeUrl = (url: string): string => {
+    // Extract YouTube video ID from various formats
+    const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const youtubeMatch = url.match(youtubeRegex);
+    
+    if (youtubeMatch) {
+      const id = youtubeMatch[1];
+      return `https://www.youtube.com/watch?v=${id}`; // ✅ force full URL
+    }
+    
+    return url; // Return original URL if not YouTube
+  };
+
   const processVideoUrl = async (videoUrl: string) => {
     // Check if URL is valid
     const isValidUrl = videoUrl.includes('tiktok.com') || 
@@ -95,14 +108,20 @@ export default function AddRecipe() {
     if (!isValidUrl) {
       return; // Silently ignore invalid URLs
     }
+    
+    // Normalize YouTube URLs to full format
+    const normalizedUrl = normalizeYouTubeUrl(videoUrl);
 
     setProcessingVideo(true);
     
     try {
-      console.log('Processing video URL:', videoUrl);
+      console.log('Processing video URL:', normalizedUrl);
+      
+      // Update form data with normalized URL
+      setFormData(prev => ({ ...prev, videoUrl: normalizedUrl }));
       
       const { data, error } = await supabase.functions.invoke('send-recipe-link', {
-        body: { recipeUrl: videoUrl }
+        body: { recipeUrl: normalizedUrl }
       });
 
       if (error) {
