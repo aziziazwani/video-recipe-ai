@@ -29,13 +29,9 @@ serve(async (req) => {
 
     console.log('Processing recipe URL:', recipeUrl);
 
-    // Enhanced payload structure for n8n workflow
+    // Simplified payload structure for n8n workflow
     const payload = {
-      recipeUrl: recipeUrl,
-      videoUrl: recipeUrl, // Alternative field name for n8n
-      url: recipeUrl, // Another alternative
-      timestamp: new Date().toISOString(),
-      action: 'fetch_specific_recipe'
+      url: recipeUrl
     };
 
     console.log('Sending payload to n8n webhook:', JSON.stringify(payload, null, 2));
@@ -91,7 +87,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: 'Failed to send recipe link', 
-        details: error.message,
+        details: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString()
       }),
       { 
